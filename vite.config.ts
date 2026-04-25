@@ -14,7 +14,8 @@ export default defineConfig({
         short_name: 'Meals',
         description: 'Trackea tus comidas diarias',
         display: 'standalone',
-        start_url: '/',
+        start_url: '/meal-tracker/',
+        scope: '/meal-tracker/',
         theme_color: '#faf8f4',
         background_color: '#faf8f4',
         icons: [

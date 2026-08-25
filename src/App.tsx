@@ -31,16 +31,16 @@ function AppInner() {
       </main>
 
       {!selectedDay && (
-        <nav className="app-nav">
-          <button className={`nav-btn ${tab === 'calendar' ? 'active' : ''}`} onClick={() => setTab('calendar')}>
+        <nav className="app-nav" aria-label="Navegación principal">
+          <button className={`nav-btn ${tab === 'calendar' ? 'active' : ''}`} onClick={() => setTab('calendar')} aria-current={tab === 'calendar' ? 'page' : undefined}>
             <span className="nav-icon">📅</span>
             <span className="nav-label">Calendario</span>
           </button>
-          <button className={`nav-btn ${tab === 'library' ? 'active' : ''}`} onClick={() => setTab('library')}>
+          <button className={`nav-btn ${tab === 'library' ? 'active' : ''}`} onClick={() => setTab('library')} aria-current={tab === 'library' ? 'page' : undefined}>
             <span className="nav-icon">📚</span>
             <span className="nav-label">Biblioteca</span>
           </button>
-          <button className={`nav-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')}>
+          <button className={`nav-btn ${tab === 'settings' ? 'active' : ''}`} onClick={() => setTab('settings')} aria-current={tab === 'settings' ? 'page' : undefined}>
             <span className="nav-icon">⚙️</span>
             <span className="nav-label">Ajustes</span>
           </button>

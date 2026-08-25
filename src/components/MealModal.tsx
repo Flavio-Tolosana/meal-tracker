@@ -18,6 +18,36 @@ export default function MealModal({ date, period, onClose }: MealModalProps) {
     inputRef.current?.focus()
   }, [])
 
+  useEffect(() => {
+    function handleOverlayKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') onClose()
+    }
+    function handleTabTrap(e: KeyboardEvent) {
+      if (e.key !== 'Tab') return
+      const sheet = document.querySelector('.modal-sheet')
+      if (!sheet) return
+      const focusable = sheet.querySelectorAll<HTMLElement>(
+        'input, button, [tabindex]:not([tabindex="-1"])'
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleOverlayKey)
+    document.addEventListener('keydown', handleTabTrap)
+    return () => {
+      document.removeEventListener('keydown', handleOverlayKey)
+      document.removeEventListener('keydown', handleTabTrap)
+    }
+  }, [onClose])
+
   const filtered = meals
     .filter(m => !m.isArchived && m.name.toLowerCase().includes(query.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -40,19 +70,25 @@ export default function MealModal({ date, period, onClose }: MealModalProps) {
     if (e.key === 'Escape') onClose()
     if (e.key === 'Enter') {
       if (filtered.length === 1) {
-        handleSelect(filtered[0].id)
+        void handleSelect(filtered[0].id)
       } else if (!exactMatch && query.trim()) {
-        handleCreate()
+        void handleCreate()
       }
     }
   }
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+      <div
+        className="modal-sheet"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label={`Añadir comida a ${PERIOD_LABELS[period]}`}
+      >
         <div className="modal-header">
           <span className="modal-title">Añadir a {PERIOD_LABELS[period]}</span>
-          <button className="modal-close" onClick={onClose}>✕</button>
+          <button className="modal-close" onClick={onClose} aria-label="Cerrar">✕</button>
         </div>
 
         <div className="modal-search-wrap">
@@ -72,7 +108,7 @@ export default function MealModal({ date, period, onClose }: MealModalProps) {
             <button
               key={meal.id}
               className="modal-result-item"
-              onClick={() => handleSelect(meal.id)}
+              onClick={() => void handleSelect(meal.id)}
             >
               <span className="result-name">{meal.name}</span>
               <span className="result-add">+</span>
@@ -80,7 +116,7 @@ export default function MealModal({ date, period, onClose }: MealModalProps) {
           ))}
 
           {query.trim() && !exactMatch && (
-            <button className="modal-create-btn" onClick={handleCreate}>
+            <button className="modal-create-btn" onClick={() => void handleCreate()}>
               <span className="create-icon">✦</span>
               Crear «{query.trim()}»
             </button>

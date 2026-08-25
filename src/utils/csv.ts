@@ -1,3 +1,10 @@
+export function escapeCSVField(field: string): string {
+  if (field.includes(',') || field.includes('"') || field.includes('\n') || field.includes('\r')) {
+    return `"${field.replace(/"/g, '""')}"`
+  }
+  return field
+}
+
 export function downloadCSV(content: string, filename: string) {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)

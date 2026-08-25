@@ -44,7 +44,7 @@ export default function CalendarView({ onSelectDay }: CalendarViewProps) {
   const todayStr = todayString()
 
   const cells: (number | null)[] = [
-    ...Array(startDow).fill(null),
+    ...(new Array(startDow).fill(null) as (number | null)[]),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
   while (cells.length % 7 !== 0) cells.push(null)
@@ -52,14 +52,14 @@ export default function CalendarView({ onSelectDay }: CalendarViewProps) {
   return (
     <div className="calendar-view">
       <div className="cal-nav">
-        <button className="cal-nav-btn" onClick={prevMonth}>‹</button>
+        <button className="cal-nav-btn" onClick={prevMonth} aria-label="Mes anterior">‹</button>
         <span className="cal-month-label">{monthName}</span>
-        <button className="cal-nav-btn" onClick={nextMonth}>›</button>
+        <button className="cal-nav-btn" onClick={nextMonth} aria-label="Mes siguiente">›</button>
       </div>
 
-      <div className="cal-grid">
+      <div className="cal-grid" role="grid" aria-label="Calario mensual">
         {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map(d => (
-          <div key={d} className="cal-dow">{d}</div>
+          <div key={d} className="cal-dow" role="columnheader">{d}</div>
         ))}
         {cells.map((day, i) => {
           if (day === null) return <div key={`e${i}`} className="cal-cell empty" />
@@ -71,6 +71,7 @@ export default function CalendarView({ onSelectDay }: CalendarViewProps) {
               key={dateStr}
               className={`cal-cell ${hasData ? 'has-data' : ''} ${isToday ? 'is-today' : ''}`}
               onClick={() => onSelectDay(dateStr)}
+              aria-label={`${day} de ${firstDay.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}`}
             >
               <span className="cal-day-num">{day}</span>
               {hasData && <span className="cal-dot" />}

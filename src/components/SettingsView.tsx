@@ -55,11 +55,11 @@ export default function SettingsView() {
           type="file"
           accept=".csv,text/csv"
           style={{ display: 'none' }}
-          onChange={handleImport}
+          onChange={e => void handleImport(e)}
         />
 
         {message && (
-          <div className={`settings-message ${message.type}`}>
+          <div className={`settings-message ${message.type}`} role="alert" aria-live="polite">
             {message.text}
           </div>
         )}

@@ -2,10 +2,13 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { Meal, DayLog, MealPeriod } from '../types'
 import { MEAL_PERIODS } from '../types'
 import * as db from '../db/indexedDB'
+import { escapeCSVField } from '../utils/csv'
 
 interface AppContextType {
   meals: Meal[]
   dayLogs: DayLog[]
+  loading: boolean
+  error: string | null
   addMeal: (name: string) => Promise<Meal>
   updateMeal: (meal: Meal) => Promise<void>
   getMealById: (id: string) => Meal | undefined
@@ -21,17 +24,26 @@ const AppContext = createContext<AppContextType | null>(null)
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [meals, setMeals] = useState<Meal[]>([])
   const [dayLogs, setDayLogs] = useState<DayLog[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     async function loadData() {
-      const [allMeals, allDayLogs] = await Promise.all([
-        db.getAllMeals(),
-        db.getAllDayLogs(),
-      ])
-      setMeals(allMeals)
-      setDayLogs(allDayLogs)
+      try {
+        const [allMeals, allDayLogs] = await Promise.all([
+          db.getAllMeals(),
+          db.getAllDayLogs(),
+        ])
+        setMeals(allMeals)
+        setDayLogs(allDayLogs)
+      } catch (err) {
+        setError('Error al cargar los datos. Intenta recargar la página.')
+        console.error('Failed to load data:', err)
+      } finally {
+        setLoading(false)
+      }
     }
-    loadData()
+    void loadData()
   }, [])
 
   const addMeal = useCallback(async (name: string): Promise<Meal> => {
@@ -42,15 +54,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       updatedAt: Date.now(),
       isArchived: false,
     }
-    await db.addMeal(meal)
-    setMeals(prev => [...prev, meal])
-    return meal
+    try {
+      await db.addMeal(meal)
+      setMeals(prev => [...prev, meal])
+      return meal
+    } catch (err) {
+      setError('Error al guardar la comida.')
+      throw err
+    }
   }, [])
 
   const updateMeal = useCallback(async (meal: Meal) => {
     const updated = { ...meal, updatedAt: Date.now() }
-    await db.updateMeal(updated)
-    setMeals(prev => prev.map(m => m.id === meal.id ? updated : m))
+    try {
+      await db.updateMeal(updated)
+      setMeals(prev => prev.map(m => m.id === meal.id ? updated : m))
+    } catch (err) {
+      setError('Error al actualizar la comida.')
+      throw err
+    }
   }, [])
 
   const getMealById = useCallback((id: string) => {
@@ -88,12 +110,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       updatedAt: Date.now(),
     }
-    await db.saveDayLog(updated)
-    setDayLogs(prev => {
-      const exists = prev.find(d => d.date === date)
-      if (exists) return prev.map(d => d.date === date ? updated : d)
-      return [...prev, updated]
-    })
+    try {
+      await db.saveDayLog(updated)
+      setDayLogs(prev => {
+        const exists = prev.find(d => d.date === date)
+        if (exists) return prev.map(d => d.date === date ? updated : d)
+        return [...prev, updated]
+      })
+    } catch (err) {
+      setError('Error al guardar el registro diario.')
+      throw err
+    }
   }, [getOrCreateDayLog])
 
   const removeMealFromDay = useCallback(async (date: string, period: MealPeriod, mealId: string) => {
@@ -107,8 +134,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       },
       updatedAt: Date.now(),
     }
-    await db.saveDayLog(updated)
-    setDayLogs(prev => prev.map(d => d.date === date ? updated : d))
+    try {
+      await db.saveDayLog(updated)
+      setDayLogs(prev => prev.map(d => d.date === date ? updated : d))
+    } catch (err) {
+      setError('Error al eliminar la comida del registro.')
+      throw err
+    }
   }, [dayLogs])
 
   const importCSV = useCallback(async (csv: string) => {
@@ -135,6 +167,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (!date || !periodTrimmed || !mealName) continue
       if (!MEAL_PERIODS.includes(periodTrimmed)) continue
 
+      const dateTrimmed = date.trim()
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateTrimmed)) continue
+
       // Find or create meal
       let mealId = mealMap.get(mealName.toLowerCase())
       if (!mealId) {
@@ -152,7 +187,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       }
 
       // Get or create daylog
-      const dateTrimmed = date.trim()
       if (!logsToSave.has(dateTrimmed)) {
         const existing = await db.getDayLog(dateTrimmed)
         logsToSave.set(dateTrimmed, existing ?? {
@@ -184,7 +218,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         for (const mealId of log.entries[period]) {
           const meal = meals.find(m => m.id === mealId)
           if (meal) {
-            lines.push(`${log.date},${period},${meal.name}`)
+            lines.push(`${log.date},${period},${escapeCSVField(meal.name)}`)
           }
         }
       }
@@ -196,6 +230,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider value={{
       meals,
       dayLogs,
+      loading,
+      error,
       addMeal,
       updateMeal,
       getMealById,
@@ -210,6 +246,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   )
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useApp() {
   const ctx = useContext(AppContext)
   if (!ctx) throw new Error('useApp must be used within AppProvider')

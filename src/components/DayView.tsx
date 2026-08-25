@@ -10,7 +10,7 @@ interface DayViewProps {
 }
 
 export default function DayView({ date, onBack }: DayViewProps) {
-  const { getDayLog, getMealById, removeMealFromDay } = useApp()
+  const { getDayLog, getMealById, removeMealFromDay, loading } = useApp()
   const [modalPeriod, setModalPeriod] = useState<MealPeriod | null>(null)
 
   const dayLog = getDayLog(date)
@@ -39,6 +39,9 @@ export default function DayView({ date, onBack }: DayViewProps) {
         <h2 className="day-title">{formatted}</h2>
       </div>
 
+      {loading ? (
+        <p className="loading-message">Cargando...</p>
+      ) : (
       <div className="periods-list">
         {MEAL_PERIODS.map(period => {
           const periodMeals = getMealsForPeriod(period)
@@ -50,6 +53,7 @@ export default function DayView({ date, onBack }: DayViewProps) {
                 <button
                   className="add-meal-btn"
                   onClick={() => setModalPeriod(period)}
+                  aria-label={`Añadir comida a ${PERIOD_LABELS[period]}`}
                 >
                   +
                 </button>
@@ -63,7 +67,7 @@ export default function DayView({ date, onBack }: DayViewProps) {
                       <span className="meal-chip-name">{meal.name}</span>
                       <button
                         className="meal-chip-remove"
-                        onClick={() => removeMealFromDay(date, period, meal.id)}
+                        onClick={() => void removeMealFromDay(date, period, meal.id)}
                         aria-label={`Eliminar ${meal.name}`}
                       >
                         ×
@@ -76,6 +80,7 @@ export default function DayView({ date, onBack }: DayViewProps) {
           )
         })}
       </div>
+      )}
 
       {modalPeriod && (
         <MealModal

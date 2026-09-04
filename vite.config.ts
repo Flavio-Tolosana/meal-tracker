@@ -13,6 +13,7 @@ export default defineConfig({
         name: 'Meal Tracker',
         short_name: 'Meals',
         description: 'Trackea tus comidas diarias',
+        version: '1.0.0',
         display: 'standalone',
         start_url: '/meal-tracker/',
         scope: '/meal-tracker/',
